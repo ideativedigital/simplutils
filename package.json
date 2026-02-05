@@ -1,0 +1,73 @@
+{
+  "name": "simplutils",
+  "version": "0.0.1",
+  "description": "SimplUtils - Simplified utilities",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./arrays": {
+      "types": "./dist/dayjs.d.ts",
+      "import": "./dist/dayjs.js",
+      "default": "./dist/dayjs.js"
+    },
+    "./objects": {
+      "types": "./dist/objects.d.ts",
+      "import": "./dist/objects.js",
+      "default": "./dist/objects.js"
+    },
+    "./types/dayjs": {
+      "types": "./dist/types/dayjs.d.ts",
+      "import": "./dist/types/dayjs.js",
+      "default": "./dist/types/dayjs.js"
+    },
+    "./types/zod": {
+      "types": "./dist/types/zod.d.ts",
+      "import": "./dist/types/zod.js",
+      "default": "./dist/types/zod.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "test": "jest",
+    "prepublishOnly": "pnpm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/acominotto/simplutils"
+  },
+  "author": {
+    "name": "Adrien Cominotto",
+    "email": "adrien.cominotto@gmail.com",
+    "url": "https://github.com/acominotto"
+  },
+  "license": "ISC",
+  "peerDependencies": {
+    "dayjs": "^1.11.19",
+    "zod": ">=4.3.6",
+    "zod-ky": "0.0.3"
+  },
+  "dependencies": {
+    "lodash.isequal": "^4.5.0"
+  },
+  "engines": {
+    "node": ">=22.10.1",
+    "pnpm": ">=10.26.1"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "@types/lodash.isequal": "^4.5.8",
+    "@types/node": "^22.10.1",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5",
+    "typescript": "^5.7.2"
+  },
+  "keywords": []
+}
