@@ -1,5 +1,8 @@
 import { isPromise, TypeHolder } from '../types'
 
+/**
+ * A map of provided values with string keys.
+ */
 export type ProvidedMap = { [k: string]: any }
 
 /**
@@ -9,9 +12,9 @@ export type ProvidedMap = { [k: string]: any }
 export type CacheContext =
   | { noCache: true }
   | {
-      noCache: false
-      refreshInterval: number
-    }
+    noCache: false
+    refreshInterval: number
+  }
 
 export type providersUnion<P1 extends Provider<any>, P2 extends Provider<any>> = Provider<
   P1['Type'] & P2['Type']
@@ -78,9 +81,9 @@ export class Provider<T extends ProvidedMap> {
         const { otherProvider, provided } = await (Provider.isProvider(other)
           ? { otherProvider: other }
           : (async () => {
-              const provided = await this.provide()
-              return { otherProvider: (other as (t: T) => Provider<U>)(provided), provided }
-            })())
+            const provided = await this.provide()
+            return { otherProvider: (other as (t: T) => Provider<U>)(provided), provided }
+          })())
         const res = await Promise.all([provided ?? this.fn(get), otherProvider.provide()])
         return { ...res[0], ...res[1] }
       },
@@ -135,6 +138,16 @@ export const provided = <
   )
 }
 
+/**
+ * Creates a new Provider with the given factory function.
+ * @param fn - Factory function that creates the provided values
+ * @param context - Optional cache context
+ * @returns A new Provider instance
+ * @example
+ * const dbProvider = createProvider(async () => ({
+ *   db: await connectToDatabase()
+ * }))
+ */
 export const createProvider = <T extends ProvidedMap>(
   fn: (get: () => T) => Promise<T> | T,
   context?: CacheContext
@@ -142,35 +155,62 @@ export const createProvider = <T extends ProvidedMap>(
   return new Provider(fn, context)
 }
 
+/**
+ * Creates a function that chains providers together based on previous provider output.
+ * @param _ - TypeHolder for type inference
+ * @param fn - Function that creates a provider from the previous provider's output
+ * @param context - Optional cache context
+ * @returns A function that chains providers
+ */
 export const chainProvider =
   <T extends ProvidedMap, R extends Provider<any>>(
     _: TypeHolder<R>,
     fn: (r: R['Type']) => Provider<T> | Promise<T> | T,
     context?: CacheContext
   ) =>
-  (r: R['Type']) => {
-    const result = fn(r)
-    if (Provider.isProvider(result)) {
-      return context ? result.withContext(context) : result
-    } else {
-      const wrapped = () => Promise.resolve(result)
-      return new Provider(wrapped, context)
+    (r: R['Type']) => {
+      const result = fn(r)
+      if (Provider.isProvider(result)) {
+        return context ? result.withContext(context) : result
+      } else {
+        const wrapped = () => Promise.resolve(result)
+        return new Provider(wrapped, context)
+      }
     }
-  }
 
 type ProviderFunctor<P> = (get: () => P) => P | Promise<P>
+
+/**
+ * Type inference helper for provider functors.
+ */
 export const inferProvided = <P>(pf: ProviderFunctor<P>) => pf
+
+/**
+ * Creates a provider that provides a single keyed element.
+ * @param key - The key for the provided element
+ * @param context - Optional cache context
+ * @returns A function that creates a single-element provider
+ * @example
+ * const userProvider = singleElementProvider('user')(async () => fetchUser())
+ * const { user } = await userProvider.provide()
+ */
 export const singleElementProvider =
   <K extends string>(key: K, context?: CacheContext) =>
-  <P>(elem: ProviderFunctor<P>) => {
-    return createProvider<{ [k in K]: P }>(get => {
-      const result = elem(() => get()[key])
-      return (
-        isPromise(result) ? result.then(r => ({ [key]: r })) : Promise.resolve({ [key]: result })
-      ) as Promise<{ [k in K]: P }>
-    }, context)
-  }
+    <P>(elem: ProviderFunctor<P>) => {
+      return createProvider<{ [k in K]: P }>(get => {
+        const result = elem(() => get()[key])
+        return (
+          isPromise(result) ? result.then(r => ({ [key]: r })) : Promise.resolve({ [key]: result })
+        ) as Promise<{ [k in K]: P }>
+      }, context)
+    }
 
+/**
+ * An empty provider that provides an empty object.
+ */
 export const emptyProvider = new Provider(async () => ({}))
 
+/**
+ * Extracts the type of a specific key from a Provider's type.
+ */
 export type providedType<M extends Provider<any>, K extends keyof M['Type']> = M['Type'][K]

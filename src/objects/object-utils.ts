@@ -2,8 +2,16 @@ import lodashEquals from 'lodash.isequal'
 import { ZodType } from 'zod'
 import { TypeHolder } from '../types'
 
+/**
+ * A generic object type with string keys and any values.
+ */
 export type AnyObject = Record<string, any>
 
+/**
+ * Type representing an object that has an ID property.
+ * @template ID - The type of the ID
+ * @template IDKey - The key name for the ID (default: 'id')
+ */
 export type HasID<ID = any, IDKey extends string = 'id'> = {
   [key in IDKey]: ID
 }
@@ -174,6 +182,15 @@ export type ResultTuple<S extends AnyObject, K extends Array<keyof S>> = {
   [Index in keyof K]: S[K[Index]]
 } & { length: K['length'] }
 
+/**
+ * Picks values from an object and returns them as a tuple (array).
+ * @param obj - The source object
+ * @param keys - The keys to pick, in order
+ * @returns A tuple of values in the same order as the keys
+ * @example
+ * const user = { name: 'Alice', age: 30, city: 'NYC' }
+ * pickAsArray(user, 'name', 'age') // => ['Alice', 30]
+ */
 export const pickAsArray = <O extends AnyObject, K extends (keyof O)[]>(
   obj: O,
   ...keys: K
@@ -258,6 +275,15 @@ export const groupById = <O extends Record<any, any>, K extends keyof O>(
   )
 }
 
+/**
+ * Creates a reusable picker function that extracts specific keys from objects.
+ * @param type - A TypeHolder or ZodType for type inference
+ * @param keys - The keys to pick
+ * @returns A function that picks the specified keys from an object
+ * @example
+ * const pickName = picker(withType<User>(), 'name', 'email')
+ * const nameAndEmail = pickName(user)
+ */
 export const picker =
   <T extends AnyObject, K extends keyof T>(type: TypeHolder<T> | ZodType<T>, ...keys: K[]) =>
     (obj: T): Pick<T, K> => {
@@ -267,8 +293,19 @@ export const picker =
       )
     }
 
+/**
+ * Type representing an object with its keys and values swapped.
+ */
 export type Swapped<O extends Record<string, string>> = { [K in keyof O as O[K]]: K }
 
+/**
+ * Swaps the keys and values of an object.
+ * @param obj - An object with string keys and string values
+ * @returns A new object where original values become keys and original keys become values
+ * @example
+ * swapObject({ a: 'x', b: 'y' })
+ * // => { x: 'a', y: 'b' }
+ */
 export const swapObject = <O extends Record<string, string>>(obj: O): Swapped<O> => {
   return Object.entries(obj).reduce((acc, [v, k]) => ({ ...acc, [k]: v }), {} as Swapped<O>)
 }
@@ -345,6 +382,19 @@ export function isInstanceOfAnyClass(obj: any): boolean {
   return obj != null && typeof obj === 'object' && obj.constructor !== Object
 }
 
+/**
+ * Recursively substitutes values in an object/array that match a condition.
+ * Traverses nested objects and arrays, replacing values that match the condition.
+ * Class instances are not traversed.
+ * @param obj - The object or array to process
+ * @param condition - A type guard function that identifies values to replace
+ * @param replace - A function that returns the replacement value
+ * @returns A new object/array with substitutions applied
+ * @example
+ * const data = { name: 'Alice', nested: { value: null } }
+ * substitute(data, (v): v is null => v === null, () => 'N/A')
+ * // => { name: 'Alice', nested: { value: 'N/A' } }
+ */
 export const substitute = <T, U>(
   obj: any,
   condition: (r: any) => r is T,

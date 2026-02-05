@@ -1,8 +1,12 @@
 export * from './arrays'
 export * from './async'
+export * from './countries'
 export * from './enums'
 export * from './objects'
+export * from './provider'
+export * from './resource'
 export * from './strings'
 export * from './throttle'
+export * from './try'
 export * from './types'
 

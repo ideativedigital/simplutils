@@ -1,5 +1,16 @@
+/**
+ * A type that represents any string while preserving literal type inference.
+ */
 export type AnyString = string & {}
 
+/**
+ * Capitalizes the first letter of a string.
+ * @param s - The string to capitalize
+ * @returns The string with its first letter capitalized
+ * @example
+ * capitalize('hello')  // => 'Hello'
+ * capitalize('WORLD')  // => 'WORLD'
+ */
 export const capitalize = <S extends string>(s: S): Capitalize<S> =>
   s.split('').reduce((acc, e) => (!acc ? e.toUpperCase() : `${acc}${e}`), '') as Capitalize<S>
 
@@ -36,15 +47,29 @@ export function capitalizeFirstname(firstname: string): string {
     .join('')
 }
 
+/**
+ * Type that converts a dotted key path to camelCase.
+ * @example
+ * type Result = CamelCaseKeyFromDottedKey<'user.first.name'>
+ * // => 'userFirstName'
+ */
 export type CamelCaseKeyFromDottedKey<
   K extends string,
   hasPrefix extends boolean = false
 > = K extends `${infer P}.${infer S}`
   ? `${P}${Capitalize<CamelCaseKeyFromDottedKey<S, true>>}`
   : hasPrefix extends true
-    ? Capitalize<K>
-    : K
+  ? Capitalize<K>
+  : K
 
+/**
+ * Converts a dot-notation string to camelCase.
+ * @param s - The dotted string to convert
+ * @returns The camelCase version of the string
+ * @example
+ * camelCaseDots('user.first.name')  // => 'userFirstName'
+ * camelCaseDots('simple')           // => 'simple'
+ */
 export const camelCaseDots = <S extends string>(s: S): CamelCaseKeyFromDottedKey<S> =>
   s
     .split('.')
@@ -127,11 +152,29 @@ export const hashToHexa = (obj: any, seed: number = 0) => {
   return hash.toString(16)
 }
 
+/**
+ * Shortens a string to a maximum length, adding ellipsis in the middle if needed.
+ * @param text - The text to shorten
+ * @param maxLength - The maximum length (default: 9)
+ * @returns The shortened string with '...' in the middle if truncated
+ * @example
+ * shorten('Hello World', 9)  // => 'He...rld'
+ * shorten('Short', 9)        // => 'Short'
+ */
 export const shorten = (text: string, maxLength: number = 9) => {
   if (text.length < maxLength) return text
   return text.slice(0, 2) + '...' + text.slice(-3)
 }
 
+/**
+ * Generates a random alphanumeric code of the specified length.
+ * Uses uppercase letters (A-Z) and digits (0-9).
+ * @param length - The length of the code to generate
+ * @returns A random alphanumeric string
+ * @example
+ * randomCode(6)  // => 'A3B7K9' (random)
+ * randomCode(4)  // => 'X2YZ' (random)
+ */
 export const randomCode = (length: number) => {
   var result = ''
   var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'

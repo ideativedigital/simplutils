@@ -1,16 +1,35 @@
 type primitive = number | string | boolean
 
+/**
+ * An object containing values for string interpolation.
+ * Can be nested to support dot-notation paths.
+ */
 type Interpolator = { [k: string]: Interpolator | primitive | Error }
 
+/**
+ * A tuple defining the start and end markers for interpolation placeholders.
+ */
 type InterpolatorMatcher = [string, string]
 
 const stripMatcher = (str: string, matcher: InterpolatorMatcher) =>
   str.replace(new RegExp(matcher[0]), '').replace(new RegExp(matcher[1]), '')
+
 /**
+ * Interpolates values into a string template using placeholder markers.
+ * Supports nested object access using dot notation.
+ * @param str - The string template with placeholders
+ * @param interpolator - The object containing values to interpolate, or a primitive value
+ * @param matcher - The placeholder markers as [start, end] (default: ['{', '}'])
+ * @returns The interpolated string with placeholders replaced
+ * @example
+ * interpolate('Hello {name}!', { name: 'Alice' })
+ * // => 'Hello Alice!'
  *
- * @param str the string to interpolate into
- * @param interpolator the interpolator object
- * @returns the interpolated string
+ * interpolate('City: {address.city}', { address: { city: 'NYC' } })
+ * // => 'City: NYC'
+ *
+ * interpolate('Value: ${val}', { val: 42 }, ['${', '}'])
+ * // => 'Value: 42'
  */
 export const interpolate = (
   str: string,
@@ -37,6 +56,20 @@ export const interpolate = (
   })
 }
 
+/**
+ * Validates that all placeholders in a string have corresponding keys in the allowed list.
+ * Throws an error if any placeholder keys are missing from the allowed keys.
+ * @param str - The string template to validate
+ * @param keys - The list of allowed interpolation keys
+ * @param matcher - The placeholder markers (default: ['\\${', '}'] for ${...} syntax)
+ * @throws Error if any placeholder keys are not in the allowed list
+ * @example
+ * validateStringAgainstInterpolatorKeys('Hello ${name}', ['name', 'age'])
+ * // => undefined (valid)
+ *
+ * validateStringAgainstInterpolatorKeys('Hello ${unknown}', ['name'])
+ * // => throws Error: missing keys: unknown
+ */
 export const validateStringAgainstInterpolatorKeys = (
   str: string,
   keys: string[],

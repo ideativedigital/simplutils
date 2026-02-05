@@ -1973,16 +1973,41 @@ export const Countries = [
 
 type FullCountry = (typeof Countries)[number]
 
+/**
+ * Type representing a lowercase ISO 3166-1 alpha-2 country code (e.g., 'us', 'fr', 'de').
+ */
 export type Country = Lowercase<(typeof Countries)[number]['code']>
+
+/**
+ * Type representing a country's English name.
+ */
 export type CountryEnglishName = (typeof Countries)[number]['name']
+
+/**
+ * Array of all lowercase country codes.
+ */
 export const CountryCodes = Countries.map(c => c.code.toLowerCase() as Country)
 
+/**
+ * Gets the flag emoji for a country code.
+ * @param country - The lowercase country code (e.g., 'us', 'fr')
+ * @returns The flag emoji, or empty string if not found
+ * @example
+ * getFlag('us') // => '🇺🇸'
+ * getFlag('fr') // => '🇫🇷'
+ */
 export const getFlag = (country: Country) => {
   return Countries.find(c => c.code === country.toUpperCase())?.flag || ''
 }
 
+/**
+ * Array of all ISO 3166-1 alpha-2 country codes in lowercase.
+ */
 export const countriesIso2 = Countries.map(c => c.code.toLowerCase() as Country)
 
+/**
+ * Map of English country names to their lowercase codes.
+ */
 export const CountriesByName = Countries.reduce<Record<CountryEnglishName, Country>>(
   (acc, c) => {
     acc[c.name] = c.code.toLowerCase() as Country
@@ -1991,9 +2016,24 @@ export const CountriesByName = Countries.reduce<Record<CountryEnglishName, Count
   {} as Record<CountryEnglishName, Country>
 )
 
+/**
+ * Options for translating country names.
+ */
 export type TranslateCountryOption = {
+  /** If true, includes the flag emoji before the name */
   includeFlag?: boolean
 }
+
+/**
+ * Translates a country to a localized name.
+ * @param country - The country (either full object or code)
+ * @param lang - The target language ('en', 'fr', or 'de')
+ * @param opts - Options (e.g., include flag emoji)
+ * @returns The translated country name, optionally with flag
+ * @example
+ * translateCountry('de', 'fr') // => 'Allemagne'
+ * translateCountry('de', 'en', { includeFlag: true }) // => '🇩🇪 Germany'
+ */
 export const translateCountry = (
   country: FullCountry | Country,
   lang: SupportedCountriesLang,
@@ -2005,21 +2045,42 @@ export const translateCountry = (
     console.error(`Country ${country} not found`)
     return country as string
   }
-  return `${opts?.includeFlag ? `${toTranslate.flag} ` : ''}${
-    lang === 'en' ? toTranslate.name : toTranslate[`${lang}_name`]
-  }`
+  return `${opts?.includeFlag ? `${toTranslate.flag} ` : ''}${lang === 'en' ? toTranslate.name : toTranslate[`${lang}_name`]
+    }`
 }
 
+/**
+ * Type guard that checks if a string is a valid country code.
+ * @param country - The string to check
+ * @returns True if it's a valid lowercase country code
+ * @example
+ * isCountry('us') // => true
+ * isCountry('xx') // => false
+ */
 export const isCountry = (country: string): country is Country => {
   return CountryCodes.includes(country as Country)
 }
 
+/**
+ * Supported languages for country name translations.
+ */
 export type SupportedCountriesLang = 'fr' | 'de' | 'en'
 
+/**
+ * Type guard that checks if a string is a supported language for country translations.
+ * @param lang - The language code to check
+ * @returns True if 'fr', 'de', or 'en'
+ */
 export const isSupportedCountriesLang = (lang: string): lang is SupportedCountriesLang => {
   return ['fr', 'de', 'en'].includes(lang)
 }
 
+/**
+ * Zod schema for validating country codes.
+ * @example
+ * zCountry.parse('us') // => 'us'
+ * zCountry.parse('invalid') // throws ZodError
+ */
 export const zCountry = z.string().refine(isCountry, {
   message: 'Invalid country code'
 }) as ZodType<Country>

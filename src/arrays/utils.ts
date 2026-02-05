@@ -1,8 +1,22 @@
+/**
+ * Function signature for take with multiple overloads.
+ */
 export type Take = {
   <T>(array: T[], n: number): T[]
   <T>(array: T[], start: number, n?: number): T[]
 }
 
+/**
+ * Takes a specified number of elements from an array, optionally starting from a given index.
+ * @param array - The source array
+ * @param param - When called with 2 arguments: the number of elements to take from the start.
+ *                When called with 3 arguments: the starting index.
+ * @param n - The number of elements to take (when using start index)
+ * @returns A new array containing the taken elements
+ * @example
+ * take([1, 2, 3, 4, 5], 3)     // => [1, 2, 3]
+ * take([1, 2, 3, 4, 5], 1, 3)  // => [2, 3, 4]
+ */
 export const take: Take = <T>(array: T[], param: number, n?: number) => {
   const start = typeof n === 'number' ? param : 0
   const count = typeof n === 'number' ? start + n : param
@@ -58,20 +72,20 @@ export const unique = <T>(
  */
 export const numberAggregator =
   (op: (n1: number, n2: number, idx: number, length: number) => number, initial?: number) =>
-  <T>(array: T[]): T extends number ? number : (transform: (t: T) => number) => number => {
-    if (array.length === 0) return (initial ?? 0) as any
-    else if (typeof array[0] === 'number')
-      return array.reduce(
-        (acc, e, i, arr) => (acc ? op(acc, e as number, i, arr.length) : (e as number)),
-        initial
-      ) as any
-    else
-      return ((transform: (t: T) => number) =>
-        array.reduce(
-          (acc, e, i, arr) => (acc ? op(acc, transform(e), i, arr.length) : transform(e)),
+    <T>(array: T[]): T extends number ? number : (transform: (t: T) => number) => number => {
+      if (array.length === 0) return (initial ?? 0) as any
+      else if (typeof array[0] === 'number')
+        return array.reduce(
+          (acc, e, i, arr) => (acc ? op(acc, e as number, i, arr.length) : (e as number)),
           initial
-        )) as any
-  }
+        ) as any
+      else
+        return ((transform: (t: T) => number) =>
+          array.reduce(
+            (acc, e, i, arr) => (acc ? op(acc, transform(e), i, arr.length) : transform(e)),
+            initial
+          )) as any
+    }
 
 /**
  * Sum an array using the Number Aggregator
@@ -114,6 +128,15 @@ export function upsert<T>(arr: T[], elem: T, matcher: (t1: T, t2: T) => boolean)
   return found ? array : [...array, elem]
 }
 
+/**
+ * Splits an array into two arrays based on a predicate function.
+ * @param arr - The source array
+ * @param predicate - A function that returns true for elements that should go in the first array
+ * @returns A tuple of two arrays: [elements matching predicate, elements not matching]
+ * @example
+ * partition([1, 2, 3, 4, 5], n => n % 2 === 0)
+ * // => [[2, 4], [1, 3, 5]]
+ */
 export function partition<T>(arr: T[], predicate: (t: T) => boolean): [T[], T[]] {
   return arr.reduce(
     ([left, right], e) => (predicate(e) ? [[...left, e], right] : [left, [...right, e]]),

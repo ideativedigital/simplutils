@@ -2,6 +2,9 @@ import { camelCaseDots, CamelCaseKeyFromDottedKey } from '../strings/strings-uti
 import { TypeHolder } from '../types/class'
 import { Primitive, RecordKey } from '../types/type-utils'
 
+/**
+ * A generic object type with string, number, or symbol keys.
+ */
 export type GenericObject = Record<RecordKey, unknown>
 
 type Join<L extends Primitive | undefined, R extends Primitive | undefined> = L extends
@@ -72,6 +75,21 @@ export type setTypeAtPath<
 
 // thanks a lot https://javascript.plainenglish.io/advanced-typescript-type-level-nested-object-paths-7f3d8901f29a
 
+/**
+ * Merges a value at a nested path in an object.
+ * Supports dot-notation paths and can accept either a value or a function to compute the new value.
+ * @param obj - The source object
+ * @param path - The dot-notation path to the property (e.g., 'user.address.city')
+ * @param toMerge - The value to set, or a function that receives the current value and returns the new value
+ * @returns A new object with the value merged at the specified path
+ * @example
+ * const obj = { user: { name: 'Alice', age: 30 } }
+ * merge(obj, 'user.age', 31)
+ * // => { user: { name: 'Alice', age: 31 } }
+ *
+ * merge(obj, 'user.age', age => age + 1)
+ * // => { user: { name: 'Alice', age: 31 } }
+ */
 export const merge = <
   O extends GenericObject,
   P extends NestedPaths<O>,
@@ -101,6 +119,16 @@ export const merge = <
   }
 }
 
+/**
+ * Creates a reusable merge function for a specific path and value/transform.
+ * @param typeHolder - A TypeHolder for type inference
+ * @param path - The dot-notation path to merge at
+ * @param toMerge - The value or transform function to apply
+ * @returns A function that applies the merge to any object of the specified type
+ * @example
+ * const incrementAge = createMerger(withType<User>(), 'age', age => age + 1)
+ * const older = incrementAge(user)
+ */
 export const createMerger = <
   O extends GenericObject,
   P extends NestedPaths<O>,
@@ -113,10 +141,17 @@ export const createMerger = <
   return (o: O) => merge(o, path, toMerge)
 }
 
+/**
+ * Type for specifying which nested paths to pick from an object.
+ * Use `true` to include a leaf property, or a nested object to pick nested properties.
+ */
 export type PickerPath<O extends GenericObject> = {
   [k in keyof O]?: O[k] extends GenericObject ? PickerPath<O[k]> | true : true
 }
 
+/**
+ * The resulting type after picking paths from an object.
+ */
 export type Picker<O extends GenericObject, P extends PickerPath<O>> = {
   [k in keyof P]: O[k] extends GenericObject
   ? P[k] extends PickerPath<O[k]>
@@ -125,6 +160,16 @@ export type Picker<O extends GenericObject, P extends PickerPath<O>> = {
   : O[k]
 }
 
+/**
+ * Picks specific nested paths from an object, preserving the structure.
+ * @param obj - The source object
+ * @param picker - An object specifying which paths to pick (use `true` to include a path)
+ * @returns A new object containing only the picked paths
+ * @example
+ * const user = { name: 'Alice', address: { city: 'NYC', zip: '10001' } }
+ * pickWithPaths(user, { name: true, address: { city: true } })
+ * // => { name: 'Alice', address: { city: 'NYC' } }
+ */
 export const pickWithPaths = <O extends GenericObject, P extends PickerPath<O>>(
   obj: O,
   picker: Readonly<P>
@@ -138,6 +183,9 @@ export const pickWithPaths = <O extends GenericObject, P extends PickerPath<O>>(
   )
 }
 
+/**
+ * The result type of pickAtPaths, with dot-notation paths converted to camelCase keys.
+ */
 export type PickAtPathResult<
   O extends GenericObject,
   P extends { [k in NestedPaths<O>]?: true }
@@ -164,6 +212,17 @@ const pickAtPath = <O extends GenericObject, P extends NestedPaths<O>>(
   return result
 }
 
+/**
+ * Picks values at multiple dot-notation paths, flattening them into a single object.
+ * Path keys are converted to camelCase (e.g., 'user.firstName' becomes 'userFirstName').
+ * @param obj - The source object
+ * @param paths - An object with dot-notation paths as keys and `true` as values
+ * @returns A flattened object with camelCase keys and the picked values
+ * @example
+ * const data = { user: { firstName: 'Alice', address: { city: 'NYC' } } }
+ * pickAtPaths(data, { 'user.firstName': true, 'user.address.city': true })
+ * // => { userFirstName: 'Alice', userAddressCity: 'NYC' }
+ */
 export const pickAtPaths = <O extends GenericObject, P extends { [k in NestedPaths<O>]?: true }>(
   obj: O,
   paths: Readonly<P>
@@ -174,6 +233,15 @@ export const pickAtPaths = <O extends GenericObject, P extends { [k in NestedPat
   )
 }
 
+/**
+ * Creates a reusable picker function for specific paths.
+ * @param _ - A TypeHolder for type inference
+ * @param paths - The paths to pick
+ * @returns A function that picks the specified paths from any object of the given type
+ * @example
+ * const pickUserInfo = pathPicker(withType<User>(), { 'profile.name': true })
+ * const info = pickUserInfo(user)
+ */
 export const pathPicker = <O extends GenericObject, P extends { [k in NestedPaths<O>]?: true }>(
   _: TypeHolder<O>,
   paths: Readonly<P>
