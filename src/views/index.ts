@@ -99,7 +99,7 @@ type UnionTypes<T1 extends AnyObject, T2 extends AnyObject> =
   {} extends T1 ? T2 : {} extends T2 ? T1 : T1 & T2
 
 // Internal type for computing the final combined view type from an array of views
-type CombinedViewType<
+export type CombinedViewType<
   Arr extends Array<ObjectView<any, any>>,
   CurType extends AnyObject = {},
   CurView extends View<any> = {}
