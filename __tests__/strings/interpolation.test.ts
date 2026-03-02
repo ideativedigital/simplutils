@@ -33,6 +33,10 @@ describe('interpolate', () => {
   it('should handle primitive as interpolator', () => {
     expect(interpolate('Result: {any}', 42 as any)).toBe('Result: 42')
   })
+
+  it('should keep placeholder when nested path is partially missing', () => {
+    expect(interpolate('City: {address.city}', { address: {} } as any)).toBe('City: {address.city}')
+  })
 })
 
 describe('validateStringAgainstInterpolatorKeys', () => {
@@ -47,6 +51,12 @@ describe('validateStringAgainstInterpolatorKeys', () => {
 
   it('should return undefined for string without placeholders', () => {
     expect(validateStringAgainstInterpolatorKeys('Hello World', [])).toBeUndefined()
+  })
+
+  it('should support custom matchers', () => {
+    expect(() =>
+      validateStringAgainstInterpolatorKeys('Hello {name}', ['name'], ['\\{', '\\}'])
+    ).not.toThrow()
   })
 })
 
@@ -63,5 +73,9 @@ describe('replaceInOrder', () => {
 
   it('should handle string with placeholder text', () => {
     expect(replaceInOrder('Hello [name], your id is [id]', 'Alice', '123')).toBe('Hello Alice, your id is 123')
+  })
+
+  it('should ignore strings without placeholders', () => {
+    expect(replaceInOrder('No placeholders here', 'x')).toBe('No placeholders here')
   })
 })

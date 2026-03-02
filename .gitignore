@@ -1,3 +1,8 @@
 dist
 node_modules
 .DS_Store
+coverage
+packages/docs/site
+packages/docs-web/public/docs
+packages/docs-web/public/api
+packages/storybook/storybook-static

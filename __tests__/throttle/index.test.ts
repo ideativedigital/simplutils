@@ -97,4 +97,23 @@ describe('smartThrottle', () => {
     await Promise.all([fn(1), fn(1)])
     expect(callCount).toBe(2) // No deduplication when disabled
   })
+
+  it('should deduplicate concurrent rejected calls and allow retry after cache clears', async () => {
+    let callCount = 0
+    const fn = smartThrottle(
+      async (id: number) => {
+        callCount++
+        await delay(5)
+        throw new Error(`boom-${id}`)
+      },
+      { delay: 20 }
+    )
+
+    await expect(Promise.all([fn(1), fn(1)])).rejects.toThrow('boom-1')
+    expect(callCount).toBe(1)
+
+    await delay(30)
+    await expect(fn(1)).rejects.toThrow('boom-1')
+    expect(callCount).toBe(2)
+  })
 })

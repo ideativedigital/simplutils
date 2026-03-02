@@ -84,6 +84,36 @@ describe('mergeArraysWithId', () => {
     const result = mergeArraysWithId(source, [])
     expect(result).toEqual(source)
   })
+
+  it('should support custom getId resolver', () => {
+    const source = [{ key: 'a', v: 'source-a' }, { key: 'b', v: 'source-b' }]
+    const updates = [{ key: 'b', v: 'updated-b' }, { key: 'c', v: 'new-c' }]
+    const result = mergeArraysWithId(source, updates, { getId: e => e.key })
+    expect(result).toEqual([
+      { key: 'a', v: 'source-a' },
+      { key: 'b', v: 'updated-b' },
+      { key: 'c', v: 'new-c' }
+    ])
+  })
+
+  it('should support reconcile mode with pruneMissing', () => {
+    const source = [
+      { id: 1, v: 'source-1', local: 'keep' },
+      { id: 2, v: 'source-2', local: 'drop' }
+    ]
+    const incoming = [
+      { id: 1, v: 'incoming-1' },
+      { id: 3, v: 'incoming-3' }
+    ]
+    const result = mergeArraysWithId(source, incoming, {
+      pruneMissing: true,
+      mergeItem: (prev, next) => ({ ...prev, ...next })
+    })
+    expect(result).toEqual([
+      { id: 1, v: 'incoming-1', local: 'keep' },
+      { id: 3, v: 'incoming-3' }
+    ])
+  })
 })
 
 describe('upsertWithId', () => {

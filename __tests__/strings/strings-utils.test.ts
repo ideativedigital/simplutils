@@ -57,6 +57,10 @@ describe('camelCaseDots', () => {
   it('should handle already capitalized segments', () => {
     expect(camelCaseDots('User.Name')).toBe('UserName')
   })
+
+  it('should tolerate empty segments', () => {
+    expect(camelCaseDots('user..name')).toBe('userName')
+  })
 })
 
 describe('idify', () => {
@@ -79,6 +83,10 @@ describe('idify', () => {
 
   it('should replace forward slashes with hyphens', () => {
     expect(idify('path/to/file')).toBe('path-to-file')
+  })
+
+  it('should normalize ligatures', () => {
+    expect(idify('archæology and cœur')).toBe('archaeology_and_coeur')
   })
 })
 
@@ -115,6 +123,15 @@ describe('toString', () => {
   it('should handle Date objects', () => {
     const date = new Date('2023-01-15T12:00:00Z')
     expect(toString(date)).toBe('2023-01-15T12:00:00.000Z')
+  })
+
+  it('should convert symbol and bigint', () => {
+    expect(toString(Symbol.for('k'))).toBe('Symbol(k)')
+    expect(toString(10n)).toBe('10')
+  })
+
+  it('should return empty string for functions', () => {
+    expect(toString(() => 'x')).toBe('')
   })
 })
 
@@ -156,6 +173,10 @@ describe('shorten', () => {
   it('should use default max length of 9', () => {
     expect(shorten('A very long string')).toBe('A ...ing')
   })
+
+  it('should shorten when text length equals max length (current behavior)', () => {
+    expect(shorten('123456789', 9)).toBe('12...789')
+  })
 })
 
 describe('randomCode', () => {
@@ -171,5 +192,9 @@ describe('randomCode', () => {
   it('should generate different codes', () => {
     const codes = new Set([randomCode(10), randomCode(10), randomCode(10)])
     expect(codes.size).toBe(3) // Highly unlikely to be duplicates
+  })
+
+  it('should return empty string for zero length', () => {
+    expect(randomCode(0)).toBe('')
   })
 })

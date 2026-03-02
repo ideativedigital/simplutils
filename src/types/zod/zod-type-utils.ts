@@ -52,7 +52,7 @@ export const isZodType = validate<ZodTypeAny>(
  * @param r - The object to get keys from
  * @returns Array of keys with proper typing
  */
-export const keys = <K extends string>(r: Record<K, any>): K[] => Object.keys(r) as K[]
+export const zodKeys = <K extends string>(r: Record<K, any>): K[] => Object.keys(r) as K[]
 
 /**
  * Creates a Zod enum schema from the keys of an object.
@@ -64,7 +64,7 @@ export const keys = <K extends string>(r: Record<K, any>): K[] => Object.keys(r)
  * // StatusEnum accepts 'active' | 'inactive'
  */
 export function ObjectKeysEnum<K extends string>(obj: Record<K, any>) {
-  return z.enum([keys(obj)[0]!, ...keys(obj)])
+  return z.enum([zodKeys(obj)[0]!, ...zodKeys(obj)])
 }
 
 /** Type guard that checks if a Zod type is ZodObject. */

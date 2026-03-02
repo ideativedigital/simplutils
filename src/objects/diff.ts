@@ -1,4 +1,4 @@
-import dayjs from 'dayjs'
+import { isDate, isEqual } from 'date-fns'
 import { AnyObject, isInstanceOfAnyClass } from './object-utils'
 
 /**
@@ -14,7 +14,7 @@ export type FieldChange = {
 }
 
 const dateToString = (date: any): string => {
-  return date instanceof Date ? date.toISOString() : dayjs.isDayjs(date) ? date.toISOString() : date
+  return date instanceof Date ? date.toISOString() : date
 }
 
 /**
@@ -44,8 +44,8 @@ export const computeDiff = (lhs: any, rhs: any, prefix: string = ''): FieldChang
     }
     return changes
   }
-  if (dayjs.isDayjs(lhs) || dayjs.isDayjs(rhs) || lhs instanceof Date || rhs instanceof Date) {
-    return dayjs(lhs).isSame(rhs)
+  if (isDate(lhs) || isDate(rhs)) {
+    return isDate(lhs) && isDate(rhs) && isEqual(lhs, rhs)
       ? []
       : [{ field: prefix, oldValue: dateToString(lhs), newValue: dateToString(rhs) }]
   }
@@ -54,11 +54,16 @@ export const computeDiff = (lhs: any, rhs: any, prefix: string = ''): FieldChang
     if (lhs.constructor !== rhs.constructor) {
       return [{ field: prefix, oldValue: lhs, newValue: rhs }]
     } else {
-      if ((lhs.equals && lhs.equals(rhs)) || lhs.toString() === rhs.toString()) {
-        return []
-      } else {
-        return [{ field: prefix, oldValue: lhs, newValue: rhs }]
+      if (typeof lhs.equals === 'function') {
+        return lhs.equals(rhs) ? [] : [{ field: prefix, oldValue: lhs, newValue: rhs }]
       }
+
+      const hasCustomToString =
+        lhs.toString !== Object.prototype.toString && rhs.toString !== Object.prototype.toString
+
+      return hasCustomToString && lhs.toString() === rhs.toString()
+        ? []
+        : [{ field: prefix, oldValue: lhs, newValue: rhs }]
     }
   }
   if (typeof lhs === 'object' && typeof rhs === 'object') {
@@ -82,12 +87,18 @@ export const computeDiff = (lhs: any, rhs: any, prefix: string = ''): FieldChang
  * @returns A new array with the modification applied
  */
 export const setElementInArray = (arr: any[], idx: number, value: any): any[] => {
-  if (idx >= arr.length && typeof value !== 'undefined') {
+  const normalizedIdx = idx < 0 ? arr.length + idx : idx
+
+  if (normalizedIdx < 0) {
+    return arr
+  }
+
+  if (normalizedIdx >= arr.length && typeof value !== 'undefined') {
     return [...arr, value]
   } else if (value === undefined) {
-    return arr.flatMap((v, i) => (i === idx ? [] : [v]))
+    return arr.flatMap((v, i) => (i === normalizedIdx ? [] : [v]))
   } else {
-    return arr.map((v, i) => (i === idx ? value : v))
+    return arr.map((v, i) => (i === normalizedIdx ? value : v))
   }
 }
 

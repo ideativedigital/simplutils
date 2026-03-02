@@ -55,16 +55,50 @@ export const pullById = <T extends HasID<any>>(arr: T[], id: T['id']): [T[], T |
  * mergeArraysWithId(source, updates)
  * // => [{ id: 1, v: 'a' }, { id: 2, v: 'updated' }, { id: 3, v: 'new' }]
  */
-export const mergeArraysWithId = <T extends HasID<any>>(source: T[], arr: T[]) => {
-  const [res, newArr] = source.reduce(
-    (_acc, e) => {
-      const [acc, toInsert] = _acc as [T[], T[]]
-      const [newToInsert, found] = pullById(toInsert, e.id)
-      return [[...acc, found ?? e], newToInsert]
-    },
-    [[] as T[], [...arr]]
-  )
-  return [...res, ...newArr]
+type MergeArraysWithIdOptions<T, id> = {
+  getId?: (item: T) => id
+  pruneMissing?: boolean
+  mergeItem?: (sourceItem: T, incomingItem: T) => T
+}
+
+const defaultGetId = <T extends HasID<any>>(item: T): T['id'] => item.id
+
+/**
+ * Merges two arrays by logical id with optional custom id resolver.
+ * By default it keeps source order, replaces matches from incoming, and appends new incoming.
+ * If `pruneMissing` is true, output follows incoming and omits source items not present in incoming.
+ */
+export const mergeArraysWithId = <T, id = T extends HasID<infer I> ? I : never>(
+  source: T[],
+  arr: T[],
+  options?: MergeArraysWithIdOptions<T, id>
+) => {
+  const getId = (options?.getId ?? defaultGetId) as (item: T) => id
+  const mergeItem = options?.mergeItem ?? ((_source: T, incoming: T) => incoming)
+  const pruneMissing = options?.pruneMissing === true
+
+  const incomingMap = new Map<id, T>()
+  arr.forEach(item => incomingMap.set(getId(item), item))
+
+  if (pruneMissing) {
+    const sourceMap = new Map<id, T>()
+    source.forEach(item => sourceMap.set(getId(item), item))
+    return arr.map(item => {
+      const existing = sourceMap.get(getId(item))
+      return existing ? mergeItem(existing, item) : item
+    })
+  }
+
+  const used = new Set<id>()
+  const mergedSource = source.map(item => {
+    const key = getId(item)
+    const incoming = incomingMap.get(key)
+    if (!incoming) return item
+    used.add(key)
+    return mergeItem(item, incoming)
+  })
+  const appended = arr.filter(item => !used.has(getId(item)))
+  return [...mergedSource, ...appended]
 }
 
 /**
@@ -79,7 +113,7 @@ export const mergeArraysWithId = <T extends HasID<any>>(source: T[], arr: T[]) =
  * upsertWithId(users, { id: 2, name: 'Bob' }) // => [{ id: 1, name: 'Alice' }, { id: 2, name: 'Bob' }]
  */
 export const upsertWithId = <T extends HasID<any>>(source: T[], elem: T) => {
-  return mergeArraysWithId(source, [elem])
+  return mergeArraysWithId(source, [elem], { getId: e => e.id })
 }
 
 /**

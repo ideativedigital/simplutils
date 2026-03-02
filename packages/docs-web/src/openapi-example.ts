@@ -1,0 +1,26 @@
+export const OPENAPI_EXAMPLE = `openapi: 3.0.3
+info:
+  title: Example API
+  version: 1.0.0
+
+x-simplutils:
+  resources:
+    - schema: User
+      urlPrefix: /api/users
+      resourceName: usersResource
+      storeName: useUsersStore
+
+components:
+  schemas:
+    User:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        age:
+          type: integer
+          minimum: 0
+`

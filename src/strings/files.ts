@@ -1,5 +1,3 @@
-import { take } from '../arrays'
-
 /**
  * Options for file reading/searching operations.
  */
@@ -19,9 +17,15 @@ export type ReadFileOptions = {
  * splitFilenameAndExtension('.gitignore')      // => ['.gitignore', '']
  */
 export const splitFilenameAndExtension = (fileName: string): [string, string] => {
-    const parts = fileName.split('.')
-    if (parts.length === 1 || (parts.length === 2 && fileName.startsWith('.'))) return [parts[0]!, '']
-    return [take(parts, parts.length - 2).join('.'), parts[parts.length - 1]!]
+    const firstDot = fileName.indexOf('.')
+    const lastDot = fileName.lastIndexOf('.')
+
+    // No extension, or dotfile without extension (.gitignore)
+    if (lastDot <= 0 || firstDot === lastDot && fileName.startsWith('.')) {
+        return [fileName, '']
+    }
+
+    return [fileName.slice(0, lastDot), fileName.slice(lastDot + 1)]
 }
 
 /**

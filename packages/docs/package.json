@@ -1,0 +1,16 @@
+{
+  "name": "@simplutils/docs",
+  "private": true,
+  "scripts": {
+    "docs": "typedoc --watch --options typedoc.json",
+    "docs:build": "typedoc --options typedoc.json",
+    "openapi:generate": "node ./scripts/generate-openapi-artifacts.mjs"
+  },
+  "dependencies": {
+    "@simplutils/openapi-helper-core": "workspace:*"
+  },
+  "devDependencies": {
+    "typedoc": "^0.28.14",
+    "typescript": "^5.7.2"
+  }
+}

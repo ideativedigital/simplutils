@@ -1,0 +1,24 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": [
+    "../../src/arrays/index.ts",
+    "../../src/async/index.ts",
+    "../../src/countries/index.ts",
+    "../../src/enums/index.ts",
+    "../../src/objects/index.ts",
+    "../../src/resource/index.ts",
+    "../../src/strings/index.ts",
+    "../../src/throttle/index.ts",
+    "../../src/try/index.ts",
+    "../../src/types/index.ts",
+    "../../src/types/zod/index.ts",
+    "../../src/views/index.ts"
+  ],
+  "tsconfig": "./tsconfig.docs.json",
+  "out": "./site",
+  "name": "simplutils API",
+  "readme": "../../README.md",
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "sort": ["source-order"]
+}

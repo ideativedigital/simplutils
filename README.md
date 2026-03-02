@@ -1,524 +1,746 @@
-# simplutils
+# @ideative/simplutils
 
-A modern TypeScript utility library for arrays, objects, strings, async operations, and more. Fully typed with comprehensive JSDoc documentation.
+TypeScript utility library focused on runtime helpers and strong typings.
+
+[![npm version](https://img.shields.io/npm/v/@ideative/simplutils.svg)](https://www.npmjs.com/package/@ideative/simplutils)
+[![npm downloads](https://img.shields.io/npm/dm/@ideative/simplutils.svg)](https://www.npmjs.com/package/@ideative/simplutils)
+[![GitHub Actions: Publish](https://img.shields.io/github/actions/workflow/status/acominotto/simplutils/publish.yml?branch=main&label=publish)](https://github.com/acominotto/simplutils/actions/workflows/publish.yml)
+[![GitHub Actions: Docs](https://img.shields.io/github/actions/workflow/status/acominotto/simplutils/deploy-docs.yml?branch=main&label=docs)](https://github.com/acominotto/simplutils/actions/workflows/deploy-docs.yml)
+
+## Links
+
+- Package: https://www.npmjs.com/package/@ideative/simplutils
+- Repository: https://github.com/acominotto/simplutils
+- Docs website: https://acominotto.github.io/simplutils/
+- API docs: https://acominotto.github.io/simplutils/docs/
 
 ## Installation
 
 ```bash
-npm install simplutils
+npm install @ideative/simplutils
 # or
-pnpm add simplutils
+pnpm add @ideative/simplutils
 # or
-yarn add simplutils
+yarn add @ideative/simplutils
 ```
 
-### Peer Dependencies
+## Peer dependencies
 
-Some modules require peer dependencies:
+Some subpath modules require peers:
 
 ```bash
-# For dayjs utilities
-pnpm add dayjs
-
-# For Zod utilities
-pnpm add zod
-
-# For resource module (REST client)
-pnpm add zod-ky
+pnpm add zod zod-ky
 ```
 
-## Quick Start
+For the zustand adapter:
 
-```typescript
-import {
-  batch,
-  unique,
-  sum, // Arrays
-  delay,
-  Mutex, // Async
-  pick,
-  omit,
-  deepEqual, // Objects
-  capitalize,
-  interpolate, // Strings
-  isDefined,
-  validate, // Types
-  enumKeys,
-  enumValues, // Enums
-} from "simplutils";
+```bash
+pnpm add zustand
 ```
 
-## Modules
+## Package exports
 
-### Arrays
+- `@ideative/simplutils`
+- `@ideative/simplutils/arrays`
+- `@ideative/simplutils/objects`
+- `@ideative/simplutils/types`
+- `@ideative/simplutils/types/zod`
+- `@ideative/simplutils/strings`
+- `@ideative/simplutils/enums`
+- `@ideative/simplutils/countries`
+- `@ideative/simplutils/resource`
+- `@ideative/simplutils/zustand`
+- `@ideative/simplutils/throttle`
+- `@ideative/simplutils/try`
+- `@ideative/simplutils/views`
 
-Utilities for working with arrays.
+## Quick start
 
-```typescript
-import {
-  batch,
-  unique,
-  sum,
-  max,
-  min,
-  take,
-  partition,
-  takeWhile,
-  arrayRange,
-  zipWithIndex,
-  createSorter,
-  createFilter,
-  findById,
-  upsertWithId,
-} from "simplutils";
+```ts
+import { batch, deepEqual, interpolate, isDefined } from "@ideative/simplutils";
 
-// Batch an array into chunks
-batch([1, 2, 3, 4, 5], 2);
-// => [[1, 2], [3, 4], [5]]
+const chunks = batch([1, 2, 3, 4], 2); // [[1,2],[3,4]]
+const same = deepEqual({ a: 1 }, { a: 1 }); // true
+const msg = interpolate("Hello {name}", { name: "World" }); // Hello World
+const clean = [1, null, 2, undefined].filter(isDefined); // [1,2]
+```
 
-// Remove duplicates
-unique([1, 2, 2, 3, 3, 3]);
-// => [1, 2, 3]
+## Resource + Zustand examples
 
-// With custom key
-unique([{ id: 1 }, { id: 1 }, { id: 2 }], "id");
-// => [{ id: 1 }, { id: 2 }]
+### 1) Create a resource and a store
 
-// Aggregations
-sum([1, 2, 3, 4, 5]); // => 15
-max([1, 2, 3, 4, 5]); // => 5
+```ts
+import { resource } from "@ideative/simplutils/resource";
+import { createResourceStore } from "@ideative/simplutils/zustand";
 
-// With transform for objects
-sum([{ v: 10 }, { v: 20 }])((item) => item.v); // => 30
+type User = { id: string; name: string };
 
-// Generate ranges
-arrayRange(5); // => [0, 1, 2, 3, 4]
-arrayRange(2, 6); // => [2, 3, 4, 5]
-arrayRange(0, 10, 2); // => [0, 2, 4, 6, 8]
+const usersResource = resource<User, string>("/api/users");
+const useUsersStore = createResourceStore(usersResource);
+```
 
-// Partition array by predicate
-partition([1, 2, 3, 4, 5], (n) => n % 2 === 0);
-// => [[2, 4], [1, 3, 5]]
+### 2) Use async resource actions from the store
 
-// Chainable sorter
-const users = [
-  { name: "Alice", age: 30 },
-  { name: "Bob", age: 25 },
-];
-users.sort(
-  createSorter<(typeof users)[0]>().key("name", "asc").key("age", "desc")
+```ts
+await useUsersStore.getState().getAll();
+await useUsersStore.getState().getById("1");
+await useUsersStore.getState().create({ id: "3", name: "Carol" });
+await useUsersStore.getState().update("3", { name: "Caroline" });
+await useUsersStore.getState().delete("3");
+```
+
+### 3) Use local/sync actions (`locally*`)
+
+```ts
+useUsersStore.getState().locallySetAll([
+  { id: "1", name: "Alice" },
+  { id: "2", name: "Bob" },
+]);
+
+useUsersStore.getState().locallySetOne({ id: "3", name: "Carol" });
+useUsersStore.getState().locallyUpsertOne({ id: "2", name: "Bobby" });
+useUsersStore.getState().locallyPatchOne("1", { name: "Alicia" });
+useUsersStore.getState().locallyRemoveOne("3");
+
+useUsersStore.getState().locallySetLoading(true, "locallySetLoading");
+useUsersStore.getState().locallySetError(null, "locallySetError");
+useUsersStore.getState().locallyReset();
+```
+
+### 4) Extend the generated store
+
+```ts
+const useExtendedUsersStore = createResourceStore(
+  usersResource,
+  undefined,
+  ({ get, helpers }) => ({
+    allNames: () => get().items.map((u) => u.name),
+    findNameById: (id: string) => helpers.findById(id)?.name,
+  })
 );
-
-// Chainable filter
-const isAdult = createFilter<{ age: number }>((u) => u.age >= 18);
-users.filter(isAdult.and((u) => u.name.startsWith("A")));
-
-// ID-based operations
-const items = [
-  { id: 1, name: "A" },
-  { id: 2, name: "B" },
-];
-findById(items, 1); // => { id: 1, name: 'A' }
-upsertWithId(items, { id: 2, name: "Updated" });
 ```
 
-### Async
+If your `resource(...)` is itself extended (for example with `search`), those custom methods are automatically forwarded to the zustand store only when they include consolidation metadata.
 
-Utilities for async operations.
+```ts
+const usersResourceWithSearch = resource<
+  User,
+  string,
+  { search: (q: string) => Promise<User[]> }
+>("/api/users").extend((r) => ({
+  search: withConsolidation(
+    (q) => r.getAll({ searchParams: new URLSearchParams({ q }) } as any),
+    "reconcile"
+  ),
+}));
 
-```typescript
-import {
-  delay,
-  Mutex,
-  preventConcurrentCalls,
-  mapPromises,
-  SyncPromise,
-} from "simplutils";
-
-// Delay execution
-await delay(1000); // Wait 1 second
-
-// Mutex for critical sections
-const mutex = new Mutex();
-await mutex.lock();
-try {
-  // Critical section - only one caller at a time
-} finally {
-  mutex.unlock();
-}
-
-// Prevent duplicate concurrent calls
-const fetchUser = preventConcurrentCalls(async (id: number) => {
-  return await api.getUser(id);
-});
-// Multiple calls with same args share one request
-const [user1, user2] = await Promise.all([fetchUser(1), fetchUser(1)]);
-
-// Map with sequential/parallel control
-await mapPromises(ids, (id) => fetchUser(id), { isSequential: true });
-
-// Externally resolvable promise
-const [promise, controller] = SyncPromise.create<string>();
-setTimeout(() => controller.resolve("done"), 1000);
-await promise; // => 'done'
+const useUsersStoreWithSearch = createResourceStore(usersResourceWithSearch);
+const filtered = await useUsersStoreWithSearch.getState().search("ali");
 ```
 
-### Objects
+You can control how forwarded custom methods update local store items:
 
-Utilities for object manipulation.
+```ts
+import { withConsolidation } from "@ideative/simplutils/resource";
 
-```typescript
+const usersResourceWithCustomSync = resource<
+  User,
+  string,
+  { me: () => Promise<User> }
+>("/api/users").extend((r) => ({
+    me: withConsolidation(() => r.getById("1"), "upsertOne"), // explicit consolidation mode
+}));
+```
+
+### 5) Typed selectors bound to the resource
+
+```ts
+import { createResourceSelectors } from "@ideative/simplutils/zustand";
+
+const usersSelectors = createResourceSelectors(usersResource);
+
+const items = usersSelectors.selectItems(useUsersStore.getState());
+const maybeUser = usersSelectors.selectById("1")(useUsersStore.getState());
+const status = usersSelectors.selectStatus(useUsersStore.getState());
+```
+
+### 6) `createWithEqualityFn` + resource slice (extendable)
+
+```ts
+import { createWithEqualityFn } from "zustand/traditional";
+import { createResourceSlice } from "@ideative/simplutils/zustand";
+
+const useUsersStore = createWithEqualityFn(
+  (set, get, store) => ({
+    ...createResourceSlice(usersResource)(set, get, store),
+    selectedId: undefined as string | undefined,
+    setSelectedId: (id?: string) => set({ selectedId: id }),
+    selectedUser: () => {
+      const id = get().selectedId;
+      return id ? get().selectById(id) : undefined;
+    },
+  }),
+  Object.is
+);
+```
+
+## Module usage
+
+```ts
 import {
-  pick,
-  omit,
-  deepEqual,
-  mapKeys,
-  mapValues,
-  groupBy,
-  merge,
-  pickAtPaths,
-  computeDiff,
+  arrayRange,
+  partition,
+  sum,
+  unique,
+} from "@ideative/simplutils/arrays";
+import {
   applyDiffs,
-} from "simplutils";
-
-// Pick/omit properties
-const user = { name: "Alice", age: 30, email: "alice@example.com" };
-pick(user, "name", "age"); // => { name: 'Alice', age: 30 }
-omit(user, "email"); // => { name: 'Alice', age: 30 }
-
-// Deep equality
-deepEqual({ a: { b: 1 } }, { a: { b: 1 } }); // => true
-
-// Transform keys/values
-mapKeys({ a: 1, b: 2 }, (k) => k.toUpperCase()); // => { A: 1, B: 2 }
-mapValues({ a: 1, b: 2 }, (v) => v * 2); // => { a: 2, b: 4 }
-
-// Group by
-const items = [
-  { type: "a", v: 1 },
-  { type: "a", v: 2 },
-  { type: "b", v: 3 },
-];
-groupBy(items, (item) => item.type);
-// => { a: [{ type: 'a', v: 1 }, { type: 'a', v: 2 }], b: [{ type: 'b', v: 3 }] }
-
-// Merge at nested path
-const obj = { user: { name: "Alice", settings: { theme: "dark" } } };
-merge(obj, "user.settings.theme", "light");
-// => { user: { name: 'Alice', settings: { theme: 'light' } } }
-
-// Compute differences between objects
-const old = { name: "Alice", age: 30 };
-const new_ = { name: "Alice", age: 31 };
-computeDiff(old, new_);
-// => [{ field: 'age', oldValue: 30, newValue: 31 }]
-```
-
-### Strings
-
-String manipulation utilities.
-
-```typescript
+  computeDiff,
+  merge,
+  pick,
+} from "@ideative/simplutils/objects";
+import { FIFOStack, validate, withType } from "@ideative/simplutils/types";
+import {
+  ObjectKeysEnum,
+  isZodObject,
+  zodKeys,
+} from "@ideative/simplutils/types/zod";
 import {
   capitalize,
-  capitalizeFirstname,
-  interpolate,
-  replaceInOrder,
   idify,
-  shorten,
-  randomCode,
   splitFilenameAndExtension,
-} from "simplutils";
-
-// Capitalize
-capitalize("hello"); // => 'Hello'
-capitalizeFirstname("jean-luc"); // => 'Jean-Luc'
-
-// String interpolation
-interpolate("Hello {name}!", { name: "Alice" });
-// => 'Hello Alice!'
-
-interpolate("City: {address.city}", { address: { city: "NYC" } });
-// => 'City: NYC'
-
-// Convert to ID format (lowercase, no accents, underscores)
-idify("Café Résumé"); // => 'cafe_resume'
-
-// Shorten with ellipsis
-shorten("Hello World!", 9); // => 'He...ld!'
-
-// Random alphanumeric code
-randomCode(6); // => 'A3B7K9' (random)
-
-// File utilities
-splitFilenameAndExtension("document.pdf"); // => ['document', 'pdf']
-```
-
-### Types
-
-Type utilities and guards.
-
-```typescript
-import {
-  validate,
-  isDefined,
-  isEmpty,
-  isString,
-  isNumber,
-  withType,
-  TypeHolder,
-  FIFOStack,
-  LIFOStack,
-  fswitch,
-} from "simplutils";
-
-// Create type guards
-const isPositive = validate<number>((n) => typeof n === "number" && n > 0);
-if (isPositive(value)) {
-  // value is typed as number
-}
-
-// Filter defined values
-const items = [1, null, 2, undefined, 3];
-items.filter(isDefined); // => [1, 2, 3]
-
-// Type holders for generic functions
-const userType = withType<{ name: string; age: number }>();
-
-// Stacks with max size
-const fifo = new FIFOStack<number>(3);
-fifo.push(1);
-fifo.push(2);
-fifo.push(3);
-fifo.push(4);
-// Stack: [2, 3, 4] - oldest item (1) dropped
-
-// Functional switch/case
-class Dog {
-  bark() {
-    return "woof";
-  }
-}
-class Cat {
-  meow() {
-    return "meow";
-  }
-}
-
-const sound = fswitch(animal)
-  .case(Dog, (dog) => dog.bark())
-  .case(Cat, (cat) => cat.meow())
-  .default(() => "unknown")
-  .execute();
-```
-
-### Enums
-
-Utilities for working with TypeScript enums.
-
-```typescript
-import { enumKeys, enumValues, enumObject } from "simplutils";
-
-enum Status {
-  Active = 0,
-  Inactive = 1,
-}
-
-enumKeys(Status); // => ['Active', 'Inactive']
-enumValues(Status); // => [0, 1]
-enumObject(Status); // => { Active: 0, Inactive: 1 } (no reverse mappings)
-```
-
-### Throttle
-
-Function throttling with smart deduplication.
-
-```typescript
-import { throttle, smartThrottle, throttled } from "simplutils";
-
-// Basic throttle - max once per 500ms
-const throttledFn = throttle(() => console.log("called"), 500);
-
-// Smart throttle for async - deduplicates concurrent calls with same args
-const fetchUser = smartThrottle(async (id: number) => api.getUser(id));
-// Concurrent calls with same args share one request:
-await Promise.all([fetchUser(1), fetchUser(1)]); // Only 1 API call
-
-// Decorator for class methods
-class UserService {
-  @throttled({ delay: 1000 })
-  async fetchUser(id: number) {
-    return api.getUser(id);
-  }
-}
-```
-
-### Countries
-
-Country data with translations and flags.
-
-```typescript
+} from "@ideative/simplutils/strings";
+import { enumKeys, enumObject, enumValues } from "@ideative/simplutils/enums";
 import {
   getFlag,
-  translateCountry,
   isCountry,
-  CountryCodes,
-  zCountry,
-} from "simplutils/countries";
-
-getFlag("us"); // => '🇺🇸'
-getFlag("fr"); // => '🇫🇷'
-
-translateCountry("de", "fr"); // => 'Allemagne'
-translateCountry("de", "en", { includeFlag: true }); // => '🇩🇪 Germany'
-
-isCountry("us"); // => true
-isCountry("xx"); // => false
-
-// Zod schema for validation
-zCountry.parse("us"); // => 'us'
-```
-
-### Try
-
-Error handling utilities.
-
-```typescript
-import { tryOr, tryOrNull, fireAndForget, wrapTry } from "simplutils";
-
-// Return default value on error
-const data = tryOr(() => JSON.parse(input), {});
-
-// Return null on error
-const data = tryOrNull(() => JSON.parse(input));
-if (data) {
-  /* ... */
-}
-
-// Fire and forget - ignore errors
-fireAndForget(() => analytics.track("event"));
-
-// Structured try/catch result
-const result = wrapTry(() => riskyOperation());
-if (result.isSuccess) {
-  console.log(result.value);
-} else {
-  console.error(result.error);
-}
-```
-
-### Provider (Dependency Injection)
-
-A provider pattern for dependency injection with caching.
-
-```typescript
-import { createProvider, Provider } from "simplutils";
-
-const dbProvider = createProvider(async () => ({
-  db: await connectToDatabase(),
-}));
-
-const userServiceProvider = dbProvider.and(async ({ db }) => ({
-  userService: new UserService(db),
-}));
-
-const { db, userService } = await userServiceProvider.provide();
-```
-
-### Resource (REST Client)
-
-A typed REST client with smart throttling.
-
-```typescript
-import { resource } from "simplutils";
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-}
-
-const users = resource<User>("/api/users");
-
-// CRUD operations
-const allUsers = await users.getAll({});
-const user = await users.getById("123");
-const created = await users.create(
-  { id: "456", name: "Alice", email: "a@b.com" },
-  {}
-);
-const updated = await users.update("456", { name: "Alicia" }, {});
-await users.delete("456", {});
-```
-
-### Zod Utilities
-
-Utilities for working with Zod schemas.
-
-```typescript
+  translateCountry,
+} from "@ideative/simplutils/countries";
 import {
-  isZodString,
-  isZodObject,
-  zUrl,
-  addView,
-  ObjectKeysEnum,
-} from "simplutils";
-
-// Type guards for Zod types
-if (isZodString(schema)) {
-  /* ... */
-}
-
-// URL validator with auto-fix
-const urlSchema = zUrl();
-urlSchema.parse("example.com"); // => 'https://example.com/'
-
-// Add computed properties
-const userSchema = z
-  .object({
-    firstName: z.string(),
-    lastName: z.string(),
-  })
-  .transform(
-    addView((u) => ({
-      fullName: `${u.firstName} ${u.lastName}`,
-    }))
-  );
-
-// Create enum from object keys
-const Status = { active: 1, inactive: 0 };
-const StatusEnum = ObjectKeysEnum(Status); // z.enum(['active', 'inactive'])
+  smartThrottle,
+  throttle,
+  throttled,
+} from "@ideative/simplutils/throttle";
+import {
+  fireAndForget,
+  tryOr,
+  tryOrNull,
+  wrapTry,
+} from "@ideative/simplutils/try";
+import { createView, mergeViews } from "@ideative/simplutils/views";
 ```
 
-### Dayjs Utilities
+## Docs
 
-Zod codec for Dayjs.
-
-```typescript
-import { zDayjs } from "simplutils";
-import dayjs from "dayjs";
-
-const schema = z.object({
-  createdAt: zDayjs,
-});
-
-const result = schema.parse({ createdAt: new Date() });
-// result.createdAt is a Dayjs instance
-```
-
-## API Reference
-
-See the source code with JSDoc comments for detailed API documentation. All functions include:
-
-- Type signatures
-- Parameter descriptions
-- Return value descriptions
-- Usage examples
+- Build API docs: `pnpm docs:build`
+- Watch API docs: `pnpm docs`
+- Local output: `packages/docs/site/index.html`
+- Run interactive docs website (docs + helper): `pnpm docs:web`
+- Build interactive docs website: `pnpm docs:web:build`
+- Generate OpenAPI artifacts (zod + resource + store): `pnpm --filter @simplutils/docs openapi:generate -- --input ./openapi/schema.yaml --output ./openapi/generated.ts`
+- Generate OpenAPI artifacts (zod + resource + store): `pnpm --filter @simplutils/docs openapi:generate -- --input ./openapi/schema.yaml --output ./openapi/generated.ts`
 
 ## License
 
 ISC
 
-## Author
+# @ideative/simplutils
 
-Adrien Cominotto - [GitHub](https://github.com/acominotto)
+TypeScript utility library focused on runtime helpers and strong typings.
+
+## Installation
+
+```bash
+npm install @ideative/simplutils
+# or
+pnpm add @ideative/simplutils
+# or
+yarn add @ideative/simplutils
+```
+
+## Peer dependencies
+
+Some modules require peer dependencies:
+
+```bash
+pnpm add zod zod-ky
+```
+
+## Package exports
+
+The package is split by subpath exports for cleaner imports and tree-shaking.
+
+- `@ideative/simplutils`
+- `@ideative/simplutils/arrays`
+- `@ideative/simplutils/objects`
+- `@ideative/simplutils/types`
+- `@ideative/simplutils/types/zod`
+- `@ideative/simplutils/strings`
+- `@ideative/simplutils/enums`
+- `@ideative/simplutils/countries`
+- `@ideative/simplutils/resource`
+- `@ideative/simplutils/throttle`
+- `@ideative/simplutils/try`
+- `@ideative/simplutils/views`
+
+## Quick start
+
+```ts
+import { batch, deepEqual, interpolate, isDefined } from "@ideative/simplutils";
+
+const chunks = batch([1, 2, 3, 4], 2); // [[1,2],[3,4]]
+const same = deepEqual({ a: 1 }, { a: 1 }); // true
+const msg = interpolate("Hello {name}", { name: "World" }); // Hello World
+const clean = [1, null, 2, undefined].filter(isDefined); // [1,2]
+```
+
+## Module usage
+
+### Arrays
+
+```ts
+import {
+  arrayRange,
+  partition,
+  sum,
+  unique,
+} from "@ideative/simplutils/arrays";
+```
+
+### Objects
+
+```ts
+import {
+  applyDiffs,
+  computeDiff,
+  merge,
+  pick,
+} from "@ideative/simplutils/objects";
+```
+
+### Types
+
+```ts
+import { FIFOStack, validate, withType } from "@ideative/simplutils/types";
+```
+
+### Zod helpers
+
+```ts
+import {
+  ObjectKeysEnum,
+  isZodObject,
+  zodKeys,
+} from "@ideative/simplutils/types/zod";
+import { z } from "zod";
+
+const schema = z.object({ a: z.string() });
+isZodObject(schema); // true
+zodKeys({ active: 1, disabled: 0 }); // ["active", "disabled"]
+ObjectKeysEnum({ active: 1, disabled: 0 }); // z.enum(["active","disabled"])
+```
+
+`zUrl` still exists for compatibility, but native `z.url()` is preferred when custom normalization is not needed.
+
+### Strings
+
+```ts
+import {
+  capitalize,
+  idify,
+  splitFilenameAndExtension,
+} from "@ideative/simplutils/strings";
+```
+
+### Enums
+
+```ts
+import { enumKeys, enumObject, enumValues } from "@ideative/simplutils/enums";
+```
+
+### Countries
+
+```ts
+import {
+  getFlag,
+  isCountry,
+  translateCountry,
+} from "@ideative/simplutils/countries";
+```
+
+### Resource
+
+```ts
+import { resource } from "@ideative/simplutils/resource";
+```
+
+### Throttle
+
+```ts
+import {
+  smartThrottle,
+  throttle,
+  throttled,
+} from "@ideative/simplutils/throttle";
+```
+
+### Try helpers
+
+```ts
+import {
+  fireAndForget,
+  tryOr,
+  tryOrNull,
+  wrapTry,
+} from "@ideative/simplutils/try";
+```
+
+### Views
+
+```ts
+import { createView, mergeViews } from "@ideative/simplutils/views";
+```
+
+## Docs
+
+- Build API docs: `pnpm docs:build`
+- Watch API docs: `pnpm docs`
+- Local output: `packages/docs/site/index.html`
+
+## License
+
+ISC
+
+# @ideative/simplutils
+
+TypeScript utility library focused on runtime helpers and strong typings.
+
+## Installation
+
+```bash
+npm install @ideative/simplutils
+# or
+pnpm add @ideative/simplutils
+# or
+yarn add @ideative/simplutils
+```
+
+## Peer dependencies
+
+Some modules require peer dependencies:
+
+```bash
+pnpm add zod zod-ky
+```
+
+## Package exports
+
+The package is split by subpath exports for cleaner imports and tree-shaking.
+
+- `@ideative/simplutils`
+- `@ideative/simplutils/arrays`
+- `@ideative/simplutils/objects`
+- `@ideative/simplutils/types`
+- `@ideative/simplutils/types/zod`
+- `@ideative/simplutils/strings`
+- `@ideative/simplutils/enums`
+- `@ideative/simplutils/countries`
+- `@ideative/simplutils/resource`
+- `@ideative/simplutils/throttle`
+- `@ideative/simplutils/try`
+- `@ideative/simplutils/views`
+
+## Quick start
+
+```ts
+import { batch, deepEqual, interpolate, isDefined } from "@ideative/simplutils";
+
+const chunks = batch([1, 2, 3, 4], 2); // [[1,2],[3,4]]
+const same = deepEqual({ a: 1 }, { a: 1 }); // true
+const msg = interpolate("Hello {name}", { name: "World" }); // Hello World
+const clean = [1, null, 2, undefined].filter(isDefined); // [1,2]
+```
+
+## Module usage
+
+### Arrays
+
+```ts
+import {
+  arrayRange,
+  partition,
+  sum,
+  unique,
+} from "@ideative/simplutils/arrays";
+```
+
+### Objects
+
+```ts
+import {
+  applyDiffs,
+  computeDiff,
+  merge,
+  pick,
+} from "@ideative/simplutils/objects";
+```
+
+### Types
+
+```ts
+import { FIFOStack, validate, withType } from "@ideative/simplutils/types";
+```
+
+### Zod helpers
+
+```ts
+import {
+  ObjectKeysEnum,
+  isZodObject,
+  zodKeys,
+} from "@ideative/simplutils/types/zod";
+import { z } from "zod";
+
+const schema = z.object({ a: z.string() });
+isZodObject(schema); // true
+zodKeys({ active: 1, disabled: 0 }); // ["active", "disabled"]
+ObjectKeysEnum({ active: 1, disabled: 0 }); // z.enum(["active","disabled"])
+```
+
+`zUrl` still exists for compatibility, but native `z.url()` is preferred when custom normalization is not needed.
+
+### Strings
+
+```ts
+import {
+  capitalize,
+  idify,
+  splitFilenameAndExtension,
+} from "@ideative/simplutils/strings";
+```
+
+### Enums
+
+```ts
+import { enumKeys, enumObject, enumValues } from "@ideative/simplutils/enums";
+```
+
+### Countries
+
+```ts
+import {
+  getFlag,
+  isCountry,
+  translateCountry,
+} from "@ideative/simplutils/countries";
+```
+
+### Resource
+
+```ts
+import { resource } from "@ideative/simplutils/resource";
+```
+
+### Throttle
+
+```ts
+import {
+  smartThrottle,
+  throttle,
+  throttled,
+} from "@ideative/simplutils/throttle";
+```
+
+### Try helpers
+
+```ts
+import {
+  fireAndForget,
+  tryOr,
+  tryOrNull,
+  wrapTry,
+} from "@ideative/simplutils/try";
+```
+
+### Views
+
+```ts
+import { createView, mergeViews } from "@ideative/simplutils/views";
+```
+
+## Docs
+
+- Build API docs: `pnpm docs:build`
+- Watch API docs: `pnpm docs`
+- Local output: `packages/docs/site/index.html`
+
+## License
+
+ISC
+
+# @ideative/simplutils
+
+TypeScript utility library focused on runtime helpers and strong typings.
+
+## Installation
+
+```bash
+npm install @ideative/simplutils
+# or
+pnpm add @ideative/simplutils
+# or
+yarn add @ideative/simplutils
+```
+
+## Peer dependencies
+
+Some modules require peers:
+
+```bash
+pnpm add zod zod-ky
+```
+
+## Package exports
+
+The package is split by subpath exports for cleaner imports and better tree-shaking.
+
+- `@ideative/simplutils`
+- `@ideative/simplutils/arrays`
+- `@ideative/simplutils/objects`
+- `@ideative/simplutils/types`
+- `@ideative/simplutils/types/zod`
+- `@ideative/simplutils/strings`
+- `@ideative/simplutils/enums`
+- `@ideative/simplutils/countries`
+- `@ideative/simplutils/resource`
+- `@ideative/simplutils/throttle`
+- `@ideative/simplutils/try`
+- `@ideative/simplutils/views`
+
+## Quick start
+
+```ts
+import { batch, deepEqual, interpolate, isDefined } from "@ideative/simplutils";
+
+const chunks = batch([1, 2, 3, 4], 2); // [[1,2],[3,4]]
+const same = deepEqual({ a: 1 }, { a: 1 }); // true
+const msg = interpolate("Hello {name}", { name: "World" }); // Hello World
+const clean = [1, null, 2, undefined].filter(isDefined); // [1,2]
+```
+
+## Module usage
+
+### Arrays
+
+```ts
+import {
+  arrayRange,
+  partition,
+  sum,
+  unique,
+} from "@ideative/simplutils/arrays";
+```
+
+### Objects
+
+```ts
+import {
+  applyDiffs,
+  computeDiff,
+  merge,
+  pick,
+} from "@ideative/simplutils/objects";
+```
+
+### Types
+
+```ts
+import { FIFOStack, validate, withType } from "@ideative/simplutils/types";
+```
+
+### Zod helpers
+
+```ts
+import {
+  ObjectKeysEnum,
+  isZodObject,
+  zodKeys,
+} from "@ideative/simplutils/types/zod";
+import { z } from "zod";
+
+const schema = z.object({ a: z.string() });
+isZodObject(schema); // true
+zodKeys({ active: 1, disabled: 0 }); // ["active", "disabled"]
+ObjectKeysEnum({ active: 1, disabled: 0 }); // z.enum(["active","disabled"])
+```
+
+`zUrl` still exists for compatibility, but native `z.url()` is preferred when you do not need custom normalization behavior.
+
+### Strings
+
+```ts
+import {
+  capitalize,
+  idify,
+  splitFilenameAndExtension,
+} from "@ideative/simplutils/strings";
+```
+
+### Enums
+
+```ts
+import { enumKeys, enumObject, enumValues } from "@ideative/simplutils/enums";
+```
+
+### Countries
+
+```ts
+import {
+  getFlag,
+  isCountry,
+  translateCountry,
+} from "@ideative/simplutils/countries";
+```
+
+### Resource (typed REST client)
+
+```ts
+import { resource } from "@ideative/simplutils/resource";
+```
+
+### Throttle
+
+```ts
+import {
+  smartThrottle,
+  throttle,
+  throttled,
+} from "@ideative/simplutils/throttle";
+```
+
+### Try helpers
+
+```ts
+import {
+  fireAndForget,
+  tryOr,
+  tryOrNull,
+  wrapTry,
+} from "@ideative/simplutils/try";
+```
+
+### Views (computed non-enumerable properties)
+
+```ts
+import { createView, mergeViews } from "@ideative/simplutils/views";
+```
+
+## Docs
+
+- Build API docs: `pnpm docs:build`
+- Watch API docs: `pnpm docs`
+- Local output: `packages/docs/site/index.html`
+
+## License
+
+ISC
