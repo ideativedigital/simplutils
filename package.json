@@ -1,6 +1,6 @@
 {
   "name": "@ideative/simplutils",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "SimplUtils - Simplified utilities",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -74,6 +74,9 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "test": "jest",
@@ -83,7 +86,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/acominotto/simplutils"
+    "url": "https://github.com/ideativedigital/simplutils"
   },
   "author": {
     "name": "Adrien Cominotto",
